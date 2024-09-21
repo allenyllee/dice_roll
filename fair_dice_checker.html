@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>骰子投擲統計</title>
+    <title>公平骰子檢查器</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -37,7 +37,11 @@
 </head>
 <body>
 
-<h1>骰子投擲統計</h1>
+<h1>公平骰子檢查器</h1>
+
+<p>
+    說明：拿出實體骰子投擲，將投擲結果輸入到輸入框中，就會自動統計並計算卡方檢定值。預設80%信心水準，表示只要骰子稍微偏離公平，就會被判定為有不公平的嫌疑。
+</p>
 
 <label for="diceInput">輸入投擲的數字 (1-6)：</label>
 <input type="text" id="diceInput" autofocus oninput="updateChart()" />
