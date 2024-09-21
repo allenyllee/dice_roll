@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>骰子投擲統計</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+        }
+        .bar {
+            width: 300px;
+            height: 20px;
+            background-color: #4CAF50;
+            margin: 5px 0;
+        }
+        .bar-container {
+            display: flex;
+            align-items: center;
+        }
+        .label {
+            width: 30px;
+        }
+        #history {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            background-color: #f9f9f9;
+            white-space: pre-wrap; /* 保持換行 */
+        }
+        #fairness {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<h1>骰子投擲統計</h1>
+
+<label for="diceInput">輸入投擲的數字 (1-6)：</label>
+<input type="text" id="diceInput" autofocus oninput="updateChart()" />
+<button onclick="resetData()">重置</button>
+<br><br>
+
+<label for="confidenceLevelSelect">選擇信心水準：</label>
+<select id="confidenceLevelSelect" onchange="updateCriticalValue()">
+    <option value="0.20" selected>80%</option>
+    <option value="0.15">85%</option>
+    <option value="0.10">90%</option>
+    <option value="0.05">95%</option>
+    <option value="0.01">99%</option>
+</select>
+
+<p>
+    信心水準越高，表示需要偏離假設（骰子是公平的）越多，才會被判定為不公平；信心水準越低，表示只要稍微偏離假設，就會被判定為不公平。
+</p>
+
+<h2>次數統計：</h2>
+<div id="chart">
+    <div class="bar-container">
+        <span class="label">1:</span>
+        <div class="bar" id="bar1"></div>
+        <span id="count1">0</span>
+    </div>
+    <div class="bar-container">
+        <span class="label">2:</span>
+        <div class="bar" id="bar2"></div>
+        <span id="count2">0</span>
+    </div>
+    <div class="bar-container">
+        <span class="label">3:</span>
+        <div class="bar" id="bar3"></div>
+        <span id="count3">0</span>
+    </div>
+    <div class="bar-container">
+        <span class="label">4:</span>
+        <div class="bar" id="bar4"></div>
+        <span id="count4">0</span>
+    </div>
+    <div class="bar-container">
+        <span class="label">5:</span>
+        <div class="bar" id="bar5"></div>
+        <span id="count5">0</span>
+    </div>
+    <div class="bar-container">
+        <span class="label">6:</span>
+        <div class="bar" id="bar6"></div>
+        <span id="count6">0</span>
+    </div>
+</div>
+
+<h2>頻率：</h2>
+<ul id="frequencyList">
+    <li>1: <span id="freq1">0%</span></li>
+    <li>2: <span id="freq2">0%</span></li>
+    <li>3: <span id="freq3">0%</span></li>
+    <li>4: <span id="freq4">0%</span></li>
+    <li>5: <span id="freq5">0%</span></li>
+    <li>6: <span id="freq6">0%</span></li>
+</ul>
+
+<h2>卡方檢定：</h2>
+<div>欲檢定的假設為：骰子是公平的（即每個面出現的機率相同）。</div>
+<div id="chiSquare">卡方值: 0</div>
+<div id="fairness">骰子公平性：尚無數據</div>
+<div id="confidenceLevel">信心水準：80%</div>
+
+<h2>總投擲次數：</h2>
+<div id="totalRolls">總投擲次數: 0</div>
+
+<h2>輸入歷史：</h2>
+<div id="history">沒有數字記錄</div>
+
+<script>
+    let counts = [0, 0, 0, 0, 0, 0];
+    let total = 0;
+    let history = [];
+    let criticalValue = 5.99; // 預設臨界值對應80%
+    const criticalValues = {
+        "0.20": 5.99,  // 80%信心水準
+        "0.15": 7.29,  // 85%信心水準
+        "0.10": 9.24,  // 90%信心水準
+        "0.05": 11.07, // 95%信心水準
+        "0.01": 15.09   // 99%信心水準
+    };
+
+    function updateChart() {
+        const input = document.getElementById("diceInput").value;
+        const number = parseInt(input);
+
+        // 檢查是否為1-6之間的有效數字
+        if (number >= 1 && number <= 6) {
+            counts[number - 1]++;
+            total++;
+
+            // 更新長條圖和次數顯示
+            for (let i = 0; i < 6; i++) {
+                document.getElementById("count" + (i + 1)).textContent = counts[i];
+                document.getElementById("bar" + (i + 1)).style.width = (counts[i] / total * 100) + "%";
+                document.getElementById("freq" + (i + 1)).textContent = ((counts[i] / total) * 100).toFixed(2) + "%";
+            }
+
+            // 更新輸入歷史
+            history.push(number);
+            displayHistory();
+
+            // 計算卡方檢定結果
+            calculateChiSquare();
+
+            // 更新總投擲次數
+            document.getElementById("totalRolls").textContent = "總投擲次數: " + total;
+        }
+
+        // 無論是否有效，都清空輸入框
+        document.getElementById("diceInput").value = "";
+    }
+
+    function displayHistory() {
+        let formattedHistory = '';
+        for (let i = 0; i < history.length; i++) {
+            // 每五個一組，換行顯示
+            formattedHistory += history[i] + ((i + 1) % 5 === 0 ? '\n' : ', ');
+        }
+        document.getElementById("history").textContent = formattedHistory.trim().replace(/,\s*$/, ''); // 去掉最後的逗號
+    }
+
+    function calculateChiSquare() {
+        let chiSquare = 0;
+        let expected = total / 6; // 每個點數的期望值
+
+        for (let i = 0; i < 6; i++) {
+            let observed = counts[i];
+            chiSquare += Math.pow(observed - expected, 2) / expected;
+        }
+
+        // 更新卡方統計值顯示
+        document.getElementById("chiSquare").textContent = "卡方值: " + chiSquare.toFixed(2);
+
+        // 根據卡方值判斷骰子是否公平
+        if (chiSquare > criticalValue) {
+            document.getElementById("fairness").textContent = "骰子公平性：不公平";
+        } else {
+            document.getElementById("fairness").textContent = "骰子公平性：公平";
+        }
+    }
+
+    function updateCriticalValue() {
+        const selectedValue = document.getElementById("confidenceLevelSelect").value;
+        criticalValue = criticalValues[selectedValue];
+        document.getElementById("confidenceLevel").textContent = "信心水準：" + (1 - selectedValue).toFixed(2) * 100 + "%";
+    }
+
+    // 重置所有數據和顯示
+    function resetData() {
+        counts = [0, 0, 0, 0, 0, 0];
+        total = 0;
+        history = [];
+        criticalValue = criticalValues["0.20"]; // 重置為80%
+
+        // 清空次數統計
+        for (let i = 0; i < 6; i++) {
+            document.getElementById("count" + (i + 1)).textContent = 0;
+            document.getElementById("bar" + (i + 1)).style.width = "0%";
+            document.getElementById("freq" + (i + 1)).textContent = "0%";
+        }
+
+        // 清空卡方檢定結果
+        document.getElementById("chiSquare").textContent = "卡方值: 0";
+        document.getElementById("fairness").textContent = "骰子公平性：尚無數據";
+        document.getElementById("confidenceLevel").textContent = "信心水準：80%";
+
+        // 清空總投擲次數
+        document.getElementById("totalRolls").textContent = "總投擲次數: 0";
+
+        // 清空輸入歷史
+        document.getElementById("history").textContent = "沒有數字記錄";
+
+        // 清空輸入框
+        document.getElementById("diceInput").value = "";
+    }
+</script>
+
+</body>
+</html>
