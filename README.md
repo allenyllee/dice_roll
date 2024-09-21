@@ -1,5 +1,5 @@
 # dice_roller
 
-[dice roller](https://allenyllee.github.io/dice_roller/dice_roller.html)
+[骰子亂數生成器](https://allenyllee.github.io/dice_roller/dice_roller.html)
 
-[fair_dice_checker](https://allenyllee.github.io/dice_roller/fair_dice_checker.html)
+[公平骰子檢查器](https://allenyllee.github.io/dice_roller/fair_dice_checker.html)
